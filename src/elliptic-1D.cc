@@ -5,6 +5,7 @@
 # include "config.h"
 #endif
 #include <iostream>
+#include <cmath>
 #include <dune/common/fvector.hh>
 #include <dune/istl/bvector.hh>
 #include <dune/common/parallel/mpihelper.hh> // An initializer of MPI
@@ -16,16 +17,19 @@
 #include <dune/grid/onedgrid.hh>
 #include <dune/grid/io/file/vtk.hh>
 
-double f(double x){return std::sin(2*M_PI*x);}
+double a_fun(double x){return (1+x*x);}
+
+//double f(double x){return -std::exp(x)*(x*x*x+4*x*x+3*x+2);}
+double f(double x){return -std::exp(x)*(x*x*x+4*x*x+3*x+2);}
 
 int main(int argc, char** argv)
 {
     Dune::MPIHelper::instance(argc, argv);
 
-    const double L = 1.0; //interval (0,1)
+    const double L = 2.0; //interval (0,L)
     const double g0 = 0.0;
-    const double g1 = 2.0;
-    const int N = 1000; // broj elemenata: x_0=0,...x_N = L;
+    const double g1 = 2*std::exp(2);
+    const int N = 100; // broj elemenata: x_0=0,...x_N = L;
     const double h = L/N;
 
     using Vector = Dune::BlockVector<double>; //Dune::BlockVector<Dune::FiledVector<double,1>
@@ -63,9 +67,9 @@ int main(int argc, char** argv)
 
     A[0][0] = 1.0;A[N][N] = 1.0;
     for(int i=1;i<N;++i){
-        A[i][i] = 2.0;
-        A[i][i-1] = -1.0;
-        A[i][i+1] = -1.0;
+        A[i][i] = a_fun(h*(i+0.5)) + a_fun(h*(i-0.5));
+        A[i][i-1] = -a_fun(h*(i-0.5));
+        A[i][i+1] = -a_fun(h*(i+0.5));
     }
     //gotova matrica
 
@@ -90,14 +94,15 @@ int main(int argc, char** argv)
     Vector Res(N+1); // želimo = Res = F - AU
     op.apply(U,Res); // Res = AU
     Res -= FF;
-    std::cout << " Norma reziduala =" <<  Res.two_norm() << "\n";
+    std::cout << "  Broj elemenata subdivizije: N = "<<N<<"\n";
+    std::cout << "  Norma reziduala =" <<  Res.two_norm() << "\n";
 
     Vector Error(N+1);
     for(int i=0;i<=N;++i)
-        Error[i] = U[i] - (2*i*h + std::sin(2*M_PI*i*h)/(4*M_PI*M_PI));// 2x +sin(2pix)/(4pi^2)
+        Error[i] = U[i] - (i*h*std::exp(i*h));//x*exp(x)
 
 
-    std::cout << " Norma greške =" <<  Error.two_norm() << "\n";
+    std::cout << "  Norma greške =" <<  Error.two_norm() << "\n";
     Dune::OneDGrid grid(N,0.0,L);
     using GV = Dune::OneDGrid::LeafGridView;
     Dune::VTKWriter<GV> writer(grid.leafGridView());

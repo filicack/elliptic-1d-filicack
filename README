@@ -1,0 +1,10 @@
+﻿# Konačne diferencije
+
+Želimo rješiti ODJ oblika:
+$$ -(a(x)u'(x))' = f(x), x \in [0,L]$$
+S rubnim uvjetima:  $u(0)=g_0, u(L) = g_1$
+
+Zadano:
+$a(x) = 1+ x^2$
+$f(x) = - e^x(x^3+4x^2+3x+2)$
+$g_0 = 0, g_1 = 2e^2$
